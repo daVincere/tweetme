@@ -84,11 +84,67 @@ def load(request):
 	#
 	csrf_token = (csrf(request)['csrf_token'])
 
+	context = {
+		'feed': feed,
+		'user': user,
+		'csrf_token': csrf_token, 
+	}
 	for feed in feeds:
 		html = '{0}{1}'.format(html, 
-				render_to_string())
+				render_to_string('feeds/partial_feed.html',
+					context))
 
 		# render_to_string(template_name, context=None, request=None, using=None)[source]¶
 		# render_to_string() loads a template like get_template() 
 		# and calls its render() method immediately. 
 		
+	return html
+
+@login_required
+@ajax_required
+def load_new(request):
+	last_feed = request.GET.get('last_feed')
+	user = request.user
+	csrf_token = (csrf(request)['csrf_token'])
+	html = _html_feeds(last_feed, user, csrf_token)
+
+	return HttpResponse(html)
+
+
+@login_required
+@ajax_required
+def check(request):
+	last_feed = request.GET.get('last_feed')
+	feed_source = request.GET.get('feed_source')
+	
+	# Checks the availablity of feeds after 
+	# the last feed 
+	feeds = Feed.get_feeds_after(last_feed)
+
+	if feed_source !='all':
+		feeds = feeds.filter(user__id=feed_source)
+
+	count = feeds.count()
+
+	return HttpResponse(count)
+
+
+@login_required
+@ajax_required
+def post(request):
+	last_feed = request.POST.get('last_feed')
+	user = request.user
+	csrf_token = (csrf(request)['csrf_token'])
+
+	feed = Feed()
+	feed.user = user
+	post = request.POST['post']
+	post = post.strip()
+
+	if len(post) > 0:
+		feed.post = post[:255]
+		feed.save()
+
+	html = _html_feeds(last_feed, user, csrf_token)
+
+	return HttpResponse(html)
