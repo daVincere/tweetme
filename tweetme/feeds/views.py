@@ -148,3 +148,37 @@ def post(request):
 	html = _html_feeds(last_feed, user, csrf_token)
 
 	return HttpResponse(html)
+
+
+# This would be viable if Activity app exists
+
+# @login_required
+# @ajax_required
+# def like(request):
+
+
+
+@login_required
+@ajax_required
+def comment(request):
+	if request.method == 'POST':
+		feed_id = request.POST['feed']
+		feed = Feed.objects.get(pk=feed_id)
+		post = request.POST['post']
+		post = post.strip()
+
+		if len(post) > 0:
+			post = post[:255]
+			user = request.user
+			feed.comment(user=user, post=post)
+			# 
+			# idk, when commented, it'll notify I guess
+			# user.profile.notify_commented(feed)
+			# user.profile.notify_also_commented(feed)
+
+		return render(request, 'feeds/partial_feed_comments.html', {'feed': feed})
+	else:
+		feed_id = request.GET.get('feed')
+		feed = Feed.objects.get(pk=feed_id)
+
+		return render(request, 'feeds/partial_feed_comments.html', {'feed': feed})
